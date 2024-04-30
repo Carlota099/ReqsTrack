@@ -4,11 +4,9 @@
 
 pragma solidity >=0.8.2 <0.9.0;
 
-import "./Requirement.sol";
+import "./Requirements.sol";
 
-contract RequirementManager {
-    uint256 public numreqs;
-    mapping(uint256 => Requirement) public requirements;
+contract RequirementManagement {
     address public owner;
 
     constructor() {
@@ -20,12 +18,6 @@ contract RequirementManager {
         _;
     }
 
-    function createRequirement(string memory _name, string memory _description) public onlyOwner returns (uint256) {
-        numreqs++;
-        requirements[numreqs] = new Requirement(numreqs, _name, _description, msg.sender);
-        return numreqs;
-    }
-
     function changeRequirementStatus(uint256 _requirementId, Requirement.Status _newStatus) public onlyOwner {
         Requirement requirement = requirements[_requirementId];
         requirement.changeStatus(_newStatus);
@@ -35,4 +27,21 @@ contract RequirementManager {
         Requirement requirement = requirements[_requirementId];
         return requirement.getRequirementInfo();
     }
+
+    function addTest(uint256 _requirementId, uint256 _testId) public onlyOwner  {
+        Requirement requirement = requirements[_requirementId];
+        requirement.addTestId(_testId);
+        //Maybe it should be linked in both directions
+    }
+
+    function linkTest()
+
+
+//function createRequeriment()
+//
+//function modifyRequeriment
+//function to track the req
+//function to list all requeriments with the ID (to make easier the creation of a req)
+
+
 }
