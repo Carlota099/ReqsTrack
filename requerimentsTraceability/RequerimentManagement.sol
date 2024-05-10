@@ -23,9 +23,9 @@ contract RequirementManagement {
         requirement.changeStatus(_newStatus);
     }
 
-    function getRequirementInfo(uint256 _requirementId) public view returns (uint256, string memory, string memory, uint256[] memory, Requirement.Status) {
+    function getRequirement(uint256 _requirementId) public view returns (uint256, string memory, string memory, uint256[] memory, Requirement.Status) {
         Requirement requirement = requirements[_requirementId];
-        return requirement.getRequirementInfo();
+        return requirement.getRequirement();
     }
 
     function addTest(uint256 _requirementId, uint256 _testId) public onlyOwner  {

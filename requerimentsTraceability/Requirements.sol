@@ -4,29 +4,36 @@ pragma solidity >=0.8.2 <0.9.0;
 
 contract Requirements {
     
+    uint256 public numreqs;
+    
+    enum Status {
+        Sent, 
+        InProcess, 
+        Testing, 
+        Finished
+    }
+
     struct Requeriment {
         uint256 id; 
         string name;  
         string description;
-        string requestedBy;     //new
+        address requestedBy;     //new
         uint256[] testIds;      //Tests that have to be made to approve this requirement.
-        enum Status {Sent, Created, Testing, Finished}
-        Status public state;
+        Status state;
         string feedback;        //in case of KO or modifications, indicate here reasons/requests
         bool result;        //always false until its succesful=OK
     }
         
     address public owner;
     mapping(uint256 => Requeriment) public requeriments;
-    //mapping(address => bool) public developers;
 
     constructor(){
         owner = msg.sender;
-        uint256 numreqs = 0;
+        numreqs = 0;
     }
 
     event RequerimentSent();
-    event RequerimentSatisfied();
+    event RequerimentModified();
     event TestingRequeriment();
     event RequerimentOk();
     event RequerimentKo();
@@ -36,46 +43,84 @@ contract Requirements {
         _;
     }
 
-//revisar estoooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
     modifier inState(Status _state) {
-        require(state == _state, "Non-valid");
+        require(_state == _state, "Non-valid");
         _;
     }
 
-    function createRequeriment(string _name, string _description) onlyOwner {
-        requeriments[numreqs].id = numreqs;
-        requeriments[numreqs].name = _name;
-        requeriments[numreqs].description = _description;
-        requeriments[numreqs].requestedBy = msg.sender;
-        requeriments[numreqs].state = Sent;
-        requeriments[numreqs].result = false;
+    function createRequeriment(string memory _name, string memory _description) public {
+        Requeriment storage req = requeriments[numreqs];
+        req.id = numreqs;
+        req.name = _name;
+        req.description = _description;
+        req.requestedBy = msg.sender;
+        req.state = Status.Sent;
+        req.result = false;
         numreqs ++;
+        emit RequerimentSent();
     }
 
-    function changeStatus(Status _newStatus) public {
-        state = _newStatus;
+    function changeStatus(uint256 _requirementId) public {
+        require(_requirementId < numreqs, "Requirement does not exist");
+
+        Requeriment storage req = requeriments[_requirementId];
+        // This passes the status to the next one
+        req.state = Status((uint(req.state) + 1) % uint(Status.Finished) + 1);
+        
+        if(req.state == Status.Testing){
+            emit TestingRequeriment();
+        }
     }
 
-    function addTestId(uint256 _testId) public {
-        testIds.push(_testId);
+    function addTest(uint256 _requirementId, uint256 _testId) public {
+        require(_requirementId < numreqs, "Requirement does not exist");
+        Requeriment storage req = requeriments[_requirementId];
+        req.testIds.push(_testId);
     }
 
-    function getRequirementInfo() public view returns (uint256, string memory, string memory, uint256[] memory, Status) {
-        return (id, name, description, testIds, state);
+    function getRequirement(uint256 _requirementId) public view returns (uint256, string memory, string memory, uint256[] memory, Status) {
+        return (requeriments[_requirementId].id, requeriments[_requirementId].name, requeriments[_requirementId].description, requeriments[_requirementId].testIds, requeriments[_requirementId].state);
     }
 
-    //the following 2 functions can only be done by developers
+    function listRequirements() public view returns (uint256[] memory, string[] memory) {
+        uint256[] memory ids = new uint256[](numreqs);
+        string[] memory names = new string[](numreqs);
+    
+        for (uint256 i = 0; i < numreqs; i++) {
+            ids[i] = requeriments[i].id;
+            names[i] = requeriments[i].name;
+        }
+        return (ids, names);
+    }
 
-    function abortRequeriment() external {
-        require(state == Status.Testing, "You can only abort a requirement that is being tested");
+    function abortRequeriment(uint256 _requirementId) external {
+        require(requeriments[_requirementId].state == Status.Testing, "You can only abort a requirement that is being tested");
         emit RequerimentKo();
-        state = Status.Finished;
+        changeStatus(_requirementId);    
     }
 
-    function aproveRequeriment() external {
-        require(state == Status.Testing, "You can only approve a requirement that is being tested");    
+    function aproveRequeriment(uint256 _requirementId) external {
+        Requeriment storage req = requeriments[_requirementId];
+        require(req.state == Status.Testing, "You can only approve a requirement that is being tested");    
+        req.state = Status.Finished;
+        req.result = true;
         emit RequerimentOk();
-        state = Status.Finished;
-        result = true;
+    }
+
+    function modifyRequirement(uint256 _requirementId, string memory _description) public{
+        require(_requirementId < numreqs, "Requirement does not exist");
+        Requeriment storage req = requeriments[_requirementId];
+        req.description = _description;
+        emit RequerimentModified();
+        
+        if(req.state==Status.Testing || req.state==Status.Finished){
+            req.state = Status.InProcess;
+        }
+    }
+
+    function addFeedback(uint256 _requirementId, string memory _feedback) public{
+        require(_requirementId < numreqs, "Requirement does not exist");
+        Requeriment storage req = requeriments[_requirementId];
+        req.feedback = _feedback; 
     }
 }
