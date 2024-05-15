@@ -17,10 +17,10 @@ contract Requirements {
         uint256 id; 
         string name;  
         string description;
-        address requestedBy;     //new
+        address requestedBy;     
         uint256[] testIds;      //Tests that have to be made to approve this requirement.
         Status state;
-        string feedback;        //in case of KO or modifications, indicate here reasons/requests
+        string feedback;        //in case of KO or modifications, indicate here reasons/requests or comments
         bool result;        //always false until its succesful=OK
     }
         
@@ -32,11 +32,11 @@ contract Requirements {
         numreqs = 0;
     }
 
-    event RequerimentSent();
-    event RequerimentModified();
-    event TestingRequeriment();
-    event RequerimentOk();
-    event RequerimentKo();
+    event RequerimentSent(uint256 Reqid);
+    event RequerimentModified(uint256 Reqid);
+    event TestingRequeriment(uint256 Reqid);
+    event RequerimentOk(uint256 Reqid);
+    event RequerimentKo(uint256 Reqid);
 
     modifier onlyOwner() {
         require(msg.sender == owner, "Only the owner can do this");
@@ -57,7 +57,7 @@ contract Requirements {
         req.state = Status.Sent;
         req.result = false;
         numreqs ++;
-        emit RequerimentSent();
+        emit RequerimentSent(req.id);
     }
 
     function changeStatus(uint256 _requirementId) public {
@@ -68,7 +68,7 @@ contract Requirements {
         req.state = Status((uint(req.state) + 1) % uint(Status.Finished) + 1);
         
         if(req.state == Status.Testing){
-            emit TestingRequeriment();
+            emit TestingRequeriment(_requirementId);
         }
     }
 
@@ -95,7 +95,7 @@ contract Requirements {
 
     function abortRequeriment(uint256 _requirementId) external {
         require(requeriments[_requirementId].state == Status.Testing, "You can only abort a requirement that is being tested");
-        emit RequerimentKo();
+        emit RequerimentKo(_requirementId);
         changeStatus(_requirementId);    
     }
 
@@ -104,14 +104,14 @@ contract Requirements {
         require(req.state == Status.Testing, "You can only approve a requirement that is being tested");    
         req.state = Status.Finished;
         req.result = true;
-        emit RequerimentOk();
+        emit RequerimentOk(_requirementId);
     }
 
     function modifyRequirement(uint256 _requirementId, string memory _description) public{
         require(_requirementId < numreqs, "Requirement does not exist");
         Requeriment storage req = requeriments[_requirementId];
         req.description = _description;
-        emit RequerimentModified();
+        emit RequerimentModified(_requirementId);
         
         if(req.state==Status.Testing || req.state==Status.Finished){
             req.state = Status.InProcess;
