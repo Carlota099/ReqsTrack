@@ -78,8 +78,8 @@ contract Requirements {
         req.testIds.push(_testId);
     }
 
-    function getRequirement(uint256 _requirementId) public view returns (uint256, string memory, string memory, uint256[] memory, Status) {
-        return (requeriments[_requirementId].id, requeriments[_requirementId].name, requeriments[_requirementId].description, requeriments[_requirementId].testIds, requeriments[_requirementId].state);
+    function getRequirement(uint256 _requirementId) public view returns (uint256, string memory, string memory, uint256[] memory, Status, string memory) {
+        return (requeriments[_requirementId].id, requeriments[_requirementId].name, requeriments[_requirementId].description, requeriments[_requirementId].testIds, requeriments[_requirementId].state, requeriments[_requirementId].feedback);
     }
 
     function listRequirements() public view returns (uint256[] memory, string[] memory) {
